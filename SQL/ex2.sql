@@ -76,13 +76,6 @@ CREATE TABLE Medication (
     unitCost DECIMAL(10,2)
 );
 
-#Store information about medications
-CREATE TABLE Medication (
-    medicationId INT PRIMARY KEY,
-    medicationName VARCHAR(100) NOT NULL,
-    description VARCHAR(255),
-    unitCost DECIMAL(10,2)
-);
 
 #Store information about hospital procedures
 CREATE TABLE `Procedure` (
@@ -91,4 +84,123 @@ CREATE TABLE `Procedure` (
     description VARCHAR(255),
     cost DECIMAL(10,2)
 );
+
+
+-- Store appointments scheduled between patients and doctors
+CREATE TABLE Appointment (
+    appointmentId INT PRIMARY KEY,
+    healthCardNo VARCHAR(20) NOT NULL,
+    staffId INT NOT NULL,
+    appointmentDate DATE NOT NULL,
+    appointmentTime TIME NOT NULL,
+    appointmentType VARCHAR(100),
+    status VARCHAR(50),
+
+    FOREIGN KEY (healthCardNo)
+        REFERENCES Patient(healthCardNo),
+
+    FOREIGN KEY (staffId)
+        REFERENCES Doctor(staffId)
+);
+
+DESCRIBE Appointment;
+
+SHOW CREATE TABLE Appointment;
+
+-- Store patient hospital admissions and assigned rooms
+CREATE TABLE Admission (
+    admissionId INT PRIMARY KEY,
+    healthCardNo VARCHAR(20) NOT NULL,
+    roomId INT NOT NULL,
+    admissionDate DATE NOT NULL,
+    dischargeDate DATE,
+
+    FOREIGN KEY (healthCardNo)
+        REFERENCES Patient(healthCardNo),
+
+    FOREIGN KEY (roomId)
+        REFERENCES HospitalRoom(roomId),
+
+    CHECK (
+        dischargeDate IS NULL
+        OR dischargeDate >= admissionDate
+    )
+);
+
+DESCRIBE Admission;
+
+SHOW CREATE TABLE Admission;
+
+-- Store medications prescribed to patients
+CREATE TABLE Prescription (
+    prescriptionId INT PRIMARY KEY,
+    healthCardNo VARCHAR(20) NOT NULL,
+    staffId INT NOT NULL,
+    medicationId INT NOT NULL,
+    prescriptionDate DATE NOT NULL,
+    dosage VARCHAR(100),
+    frequency VARCHAR(100),
+
+    FOREIGN KEY (healthCardNo)
+        REFERENCES Patient(healthCardNo),
+
+    FOREIGN KEY (staffId)
+        REFERENCES Doctor(staffId),
+
+    FOREIGN KEY (medicationId)
+        REFERENCES Medication(medicationId)
+);
+
+DESCRIBE Prescription;
+
+SHOW CREATE TABLE Prescription;
+
+-- Record procedures performed on patients
+CREATE TABLE PatientProcedure (
+    patientProcedureId INT PRIMARY KEY,
+    healthCardNo VARCHAR(20) NOT NULL,
+    procedureId INT NOT NULL,
+    procedureDate DATE NOT NULL,
+
+    FOREIGN KEY (healthCardNo)
+        REFERENCES Patient(healthCardNo),
+
+    FOREIGN KEY (procedureId)
+        REFERENCES `Procedure`(procedureId)
+);
+
+DESCRIBE PatientProcedure;
+
+SHOW CREATE TABLE PatientProcedure;
+
+-- Store patient billing information
+CREATE TABLE Bill (
+    billId INT PRIMARY KEY,
+    healthCardNo VARCHAR(20) NOT NULL,
+    billDate DATE NOT NULL,
+    paymentStatus VARCHAR(50),
+
+    FOREIGN KEY (healthCardNo)
+        REFERENCES Patient(healthCardNo)
+);
+
+DESCRIBE Bill;
+
+SHOW CREATE TABLE Bill;
+
+-- Link billed procedures to patient bills
+CREATE TABLE BillProcedure (
+    billId INT NOT NULL,
+    patientProcedureId INT NOT NULL,
+
+    PRIMARY KEY (billId, patientProcedureId),
+
+    FOREIGN KEY (billId)
+        REFERENCES Bill(billId),
+
+    FOREIGN KEY (patientProcedureId)
+        REFERENCES PatientProcedure(patientProcedureId)
+);
+
+SHOW TABLES;
 
