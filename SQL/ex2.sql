@@ -17,6 +17,9 @@ CREATE TABLE Department (
     specialty VARCHAR(100)
 );
 
+USE code_blue;
+
+DESCRIBE Department;
 
 #Store patient personal and contact information
 CREATE TABLE Patient (
@@ -29,6 +32,7 @@ CREATE TABLE Patient (
     email VARCHAR(100)
 );
 
+DESCRIBE Patient;
 
 #Store doctor information and their assigned department
 CREATE TABLE Doctor (
@@ -69,12 +73,15 @@ SHOW CREATE TABLE HospitalRoom;
 
 
 # Store information about medications
+
 CREATE TABLE Medication (
     medicationId INT PRIMARY KEY,
     medicationName VARCHAR(100) NOT NULL,
     description VARCHAR(255),
     unitCost DECIMAL(10,2)
 );
+
+DESCRIBE Medication;
 
 
 #Store information about hospital procedures
@@ -85,8 +92,9 @@ CREATE TABLE `Procedure` (
     cost DECIMAL(10,2)
 );
 
+DESCRIBE `Procedure`;
 
--- Store appointments scheduled between patients and doctors
+# Store appointments scheduled between patients and doctors
 CREATE TABLE Appointment (
     appointmentId INT PRIMARY KEY,
     healthCardNo VARCHAR(20) NOT NULL,
@@ -107,7 +115,7 @@ DESCRIBE Appointment;
 
 SHOW CREATE TABLE Appointment;
 
--- Store patient hospital admissions and assigned rooms
+# Store patient hospital admissions and assigned rooms
 CREATE TABLE Admission (
     admissionId INT PRIMARY KEY,
     healthCardNo VARCHAR(20) NOT NULL,
@@ -131,7 +139,7 @@ DESCRIBE Admission;
 
 SHOW CREATE TABLE Admission;
 
--- Store medications prescribed to patients
+# Store medications prescribed to patients
 CREATE TABLE Prescription (
     prescriptionId INT PRIMARY KEY,
     healthCardNo VARCHAR(20) NOT NULL,
@@ -155,7 +163,7 @@ DESCRIBE Prescription;
 
 SHOW CREATE TABLE Prescription;
 
--- Record procedures performed on patients
+# Record procedures performed on patients
 CREATE TABLE PatientProcedure (
     patientProcedureId INT PRIMARY KEY,
     healthCardNo VARCHAR(20) NOT NULL,
@@ -173,7 +181,7 @@ DESCRIBE PatientProcedure;
 
 SHOW CREATE TABLE PatientProcedure;
 
--- Store patient billing information
+# Store patient billing information
 CREATE TABLE Bill (
     billId INT PRIMARY KEY,
     healthCardNo VARCHAR(20) NOT NULL,
@@ -188,7 +196,7 @@ DESCRIBE Bill;
 
 SHOW CREATE TABLE Bill;
 
--- Link billed procedures to patient bills
+# Link billed procedures to patient bills
 CREATE TABLE BillProcedure (
     billId INT NOT NULL,
     patientProcedureId INT NOT NULL,
@@ -202,5 +210,30 @@ CREATE TABLE BillProcedure (
         REFERENCES PatientProcedure(patientProcedureId)
 );
 
+DESCRIBE BillProcedure;
+
 SHOW TABLES;
 
+USE code_blue;
+SHOW TABLES;
+
+USE code_blue;
+
+SELECT
+    TABLE_NAME,
+    COLUMN_NAME,
+    REFERENCED_TABLE_NAME,
+    REFERENCED_COLUMN_NAME
+FROM information_schema.KEY_COLUMN_USAGE
+WHERE TABLE_SCHEMA = 'code_blue'
+  AND REFERENCED_TABLE_NAME IS NOT NULL
+ORDER BY TABLE_NAME, COLUMN_NAME;
+
+USE code_blue;
+
+SELECT
+    TABLE_NAME,
+    TABLE_ROWS
+FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = 'code_blue'
+  AND TABLE_TYPE = 'BASE TABLE';
