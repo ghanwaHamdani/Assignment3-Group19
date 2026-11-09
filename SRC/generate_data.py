@@ -17,6 +17,8 @@ How referential integrity is kept:
       never repeat.
     - BillProcedure only links a bill to procedures of the SAME patient.
       No foreign key enforces this, so the generator does.
+    - A room never holds more patients at once than its capacity, and its
+      availabilityStatus is computed from its current admissions.
 
 Uses a fixed random seed, so every run produces exactly the same data.
 Run from any folder:  python3 /full/path/to/SRC/generate_data.py
@@ -238,8 +240,11 @@ def make_rooms():
                 room_type, capacity = "Operating Room", 1
             else:
                 room_type, capacity = "ICU", 1
-            status = random.choices(["Available", "Occupied", "Cleaning"], weights=[5, 4, 1])[0]
-            rows.append((room_id, floor * 100 + n, floor, room_type, capacity, status))
+            # The real status is set later by set_room_status(), from the admissions.
+            # This draw is kept only so the random sequence (and so every other
+            # table's data) stays exactly the same as before the fix.
+            random.choices(["Available", "Occupied", "Cleaning"], weights=[5, 4, 1])
+            rows.append((room_id, floor * 100 + n, floor, room_type, capacity, None))
             room_id += 1
     return rows
 
@@ -295,6 +300,8 @@ def make_appointments(pick_patient, doctor_ids):
 def make_admissions(patient_cards, rooms):
     # Operating rooms are for procedures, not overnight stays
     bed_room_ids = [r[0] for r in rooms if r[3] != "Operating Room"]
+    capacity = {r[0]: r[4] for r in rooms}
+    stays = {room_id: [] for room_id in bed_room_ids}  # roomId -> [(admitted, discharged)]
     rows = []
     for admission_id in range(1, NUM_ADMISSIONS + 1):
         card = random.choice(patient_cards)
@@ -304,8 +311,48 @@ def make_admissions(patient_cards, rooms):
             discharged = None
         else:
             discharged = admitted + timedelta(days=random.randint(0, 14))  # always >= admitted
-        rows.append((admission_id, card, random.choice(bed_room_ids), admitted, discharged))
+            # A discharge can't be recorded after "today", so cap it at REF_DATE
+            discharged = min(discharged, REF_DATE)
+        room_id = random.choice(bed_room_ids)
+        # A room can never hold more patients at once than its capacity.
+        # If the chosen room is full on any day of this stay, use the next room
+        # (in roomId order) that has a free bed for the whole stay.
+        start = bed_room_ids.index(room_id)
+        for k in range(len(bed_room_ids)):
+            candidate = bed_room_ids[(start + k) % len(bed_room_ids)]
+            if room_has_space(stays[candidate], capacity[candidate], admitted, discharged):
+                room_id = candidate
+                break
+        stays[room_id].append((admitted, discharged))
+        rows.append((admission_id, card, room_id, admitted, discharged))
     return rows
+
+
+def room_has_space(room_stays, room_capacity, admitted, discharged):
+    """True if adding the stay [admitted, discharged] never puts more than
+    room_capacity patients in the room on the same day. None = still admitted."""
+    end = discharged or date.max
+    # The number of patients only goes up when someone is admitted, so it is
+    # enough to check the first day of this stay and every later admission day.
+    check_days = [admitted] + [a for a, _ in room_stays if admitted < a <= end]
+    for day in check_days:
+        present = sum(1 for a, d in room_stays if a <= day <= (d or date.max))
+        if present + 1 > room_capacity:
+            return False
+    return True
+
+
+def set_room_status(rooms, admissions):
+    """availabilityStatus must agree with the admissions: a room is 'Occupied'
+    when its current patients (dischargeDate IS NULL) fill its capacity,
+    otherwise 'Available'."""
+    current = {}
+    for _, _, room_id, _, discharged in admissions:
+        if discharged is None:
+            current[room_id] = current.get(room_id, 0) + 1
+    return [(room_id, room_no, floor, room_type, capacity,
+             "Occupied" if current.get(room_id, 0) >= capacity else "Available")
+            for room_id, room_no, floor, room_type, capacity, _ in rooms]
 
 
 def make_prescriptions(pick_patient, doctor_ids, medications):
@@ -380,6 +427,7 @@ def main():
 
     appointments = make_appointments(pick_patient, doctor_ids)
     admissions = make_admissions(patient_cards, rooms)
+    rooms = set_room_status(rooms, admissions)  # status must match the admissions
     prescriptions = make_prescriptions(pick_patient, doctor_ids, medications)
     patient_procedures = make_patient_procedures(pick_patient, procedures)
     bills, bill_procedures = make_bills(patient_procedures)
