@@ -186,11 +186,14 @@ CREATE TABLE Bill (
     billId INT PRIMARY KEY,
     healthCardNo VARCHAR(20) NOT NULL,
     billDate DATE NOT NULL,
+    issueDate DATE,
+    dueDate DATE,
     paymentStatus VARCHAR(50),
 
     FOREIGN KEY (healthCardNo)
         REFERENCES Patient(healthCardNo)
 );
+
 
 DESCRIBE Bill;
 
