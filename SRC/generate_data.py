@@ -381,6 +381,7 @@ def make_patient_procedures(pick_patient, procedures):
 # contains procedures of its own patient
 # ---------------------------------------------------------------------------
 
+
 def make_bills(patient_procedures):
     # Group procedures by patient, oldest first
     by_patient = {}
@@ -408,6 +409,7 @@ def make_bills(patient_procedures):
                 bill_procedures.append((bill_id, pp_id))
             bill_id += 1
     return bills, bill_procedures
+
 
 
 # ---------------------------------------------------------------------------
