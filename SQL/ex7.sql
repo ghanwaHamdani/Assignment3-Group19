@@ -7,9 +7,9 @@ FROM Patient;
 
 -- joins the Doctor and Appointment tables + displays appointments associated with each doctor (VIEW 2)
 CREATE VIEW DoctorAppointments AS
-SELECT d.staffId, d.fName, d.lName, d.departmentName, COUNT(a.appointmentId) AS totalAppts
+SELECT d.staffId, d.fName, d.lName, d.departmentName, COUNT(a.appointmentId) totalAppts
 FROM Doctor d 
-JOIN Appointment AS a
+JOIN Appointment a
     ON d.staffId = a.staffId
 GROUP BY d.staffId, d.fName, d.lName, d.departmentName;
 
@@ -44,12 +44,28 @@ SELECT healthCardNo, phoneNo
 FROM Patient
 WHERE healthCardNo = '1001-466-370-XT';
 
+-- testing INSERT through simple view
+START TRANSACTION;
+
+INSERT INTO PatientContact (healthCardNo, fName, lName, phoneNo)
+VALUES ('EX7-TEST-0001', 'Test', 'Patient', '519-555-0100');
+
+SELECT *
+FROM PatientContact
+WHERE healthCardNo = 'EX7-TEST-0001';
+
+ROLLBACK;
+
+-- testing INSERT with missing required attributes
+INSERT INTO PatientContact (healthCardNo, phoneNo)
+VALUES ('EX7-TEST-0002', '519-555-0101');
+
 -- testing modification of the DoctorAppointment view by changing a value
--- UPDATE DoctorAppointments
--- SET totalAppts = 100
--- WHERE staffId = 1001;
+UPDATE DoctorAppointments
+SET totalAppts = 100
+WHERE staffId = 1001;
 
 -- testing by inserting a tuple into a view to check if modification is allowed
--- INSERT INTO DoctorAppointment (staffId, fName, lName, departmentName, totalAppts)
--- VALUES (9999, 'Test', 'Doctor', 'Cardiology', 10);
+INSERT INTO DoctorAppointments (staffId, fName, lName, departmentName, totalAppts)
+VALUES (9999, 'Test', 'Doctor', 'Cardiology', 10);
 
